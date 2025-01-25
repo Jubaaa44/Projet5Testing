@@ -120,4 +120,69 @@ describe('Session Form', () => {
     cy.get('button[mat-icon-button][routerLink="/sessions"]').click();
     cy.url().should('include', '/sessions');
   });
+
+  it('should handle API error on session creation', () => {
+    cy.intercept('POST', '**/api/session', {
+      statusCode: 500,
+      body: { message: 'Server error' }
+    }).as('createSessionError');
+
+    // Remplir le formulaire
+    cy.get('input[formControlName="name"]').type('Test Session');
+    cy.get('input[formControlName="date"]').type('2025-01-22');
+    cy.get('mat-select[formControlName="teacher_id"]').click();
+    cy.get('mat-option').first().click();
+    cy.get('textarea[formControlName="description"]').type('Test Description');
+    cy.get('button[type="submit"]').click();
+
+    // Vérifier gestion erreur
+    cy.wait('@createSessionError');
+    cy.url().should('include', '/sessions/create');
+  });
+
+  it('should handle teacher loading error', () => {
+    // Setup admin user
+    const mockUser = {
+      token: 'fake-jwt-token',
+      admin: true
+    };
+    cy.window().then((window) => {
+      window.sessionStorage.setItem('token', mockUser.token);
+      window.localStorage.setItem('session', JSON.stringify(mockUser));
+    });
+
+    cy.intercept('POST', '**/api/auth/login', {
+      statusCode: 200,
+      body: mockUser
+    }).as('login');
+
+    cy.intercept('GET', '**/api/session', {
+      statusCode: 200,
+      body: []
+    }).as('getSessions');
+
+    cy.intercept('GET', '**/api/teacher', {
+      statusCode: 500
+    }).as('getTeachersError');
+
+    cy.visit('/login');
+    cy.get('input[formControlName="email"]').type('yoga@studio.com{enter}');
+    cy.get('input[formControlName="password"]').type('test!1234{enter}');
+    cy.wait('@login');
+    cy.wait('@getSessions');
+
+    cy.get('button[routerLink="create"]').click();
+    cy.wait('@getTeachersError');
+  });
+
+  it('should validate description length', () => {
+    cy.get('textarea[formControlName="description"]')
+      .type('a'.repeat(2001), { delay: 0 });
+    cy.get('button[type="submit"]').should('be.disabled');
+    
+    cy.get('textarea[formControlName="description"]')
+      .clear()
+      .type('Valid description', { delay: 0 });
+    cy.get('button[type="submit"]').should('be.disabled');
+  });
 });

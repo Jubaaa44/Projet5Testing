@@ -221,4 +221,79 @@ describe('User Information Display', () => {
     // Vérifier que le message admin n'est pas présent
     cy.contains('You are admin').should('not.exist')
   })
+
+  describe('Error Handling', () => {
+    beforeEach(() => {
+      const mockUser = {
+        token: 'fake-token',
+        type: 'Bearer',
+        id: 1,
+        username: 'test',
+        firstName: 'Test',
+        lastName: 'User',
+        admin: false
+      };
+   
+      cy.window().then((window) => {
+        window.sessionStorage.setItem('token', mockUser.token);
+        window.localStorage.setItem('session', JSON.stringify(mockUser));
+      });
+   
+      cy.intercept('POST', '/api/auth/login', {
+        statusCode: 200,
+        body: mockUser
+      }).as('login');
+   
+      cy.intercept('GET', '/api/session', []).as('sessions');
+    });
+   
+    it('should handle failed user data loading', () => {
+      cy.intercept('GET', '/api/user/*', {
+        forceNetworkError: true
+      }).as('getUserError');
+  
+      cy.visit('/login');
+      cy.get('input[formControlName=email]').type("yoga@studio.com");
+      cy.get('input[formControlName=password]').type(`${"test!1234"}{enter}{enter}`);
+  
+      cy.get('span.link').contains('Account').click();
+      cy.wait('@getUserError');
+      cy.url().should('include', '/me');
+    });
+  
+    it('should handle failed delete request', () => {
+      cy.intercept('GET', '/api/user/*', {
+        body: {
+          id: 1,
+          firstName: 'Test',
+          lastName: 'User',
+          email: 'test@test.com',
+          admin: false,
+          createdAt: '2024-01-15T10:00:00Z',
+          updatedAt: '2024-01-15T10:00:00Z'
+        }
+      });
+  
+      cy.intercept('DELETE', '/api/user/*', {
+        forceNetworkError: true
+      }).as('deleteError');
+  
+      cy.visit('/login');
+      cy.get('input[formControlName=email]').type("yoga@studio.com");
+      cy.get('input[formControlName=password]').type(`${"test!1234"}{enter}{enter}`);
+  
+      cy.get('span.link').contains('Account').click();
+      cy.contains('button', 'Detail').click();
+      cy.wait('@deleteError');
+      cy.url().should('include', '/me');
+    });
+   });
+  
+  describe('URL Navigation', () => {
+    it('should redirect to login when accessing /me without authentication', () => {
+      cy.visit('/me');
+      cy.url().should('include', '/login');
+    });
+  });
+  
 })

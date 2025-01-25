@@ -248,4 +248,135 @@ describe('Session Detail', () => {
     // Vérifier le retour au bouton initial
     cy.contains('button', 'Participate').should('be.visible');
   });
+
+  it('should handle API errors on session load', () => {
+    const authToken = 'fake-jwt-token';
+    const mockUser = {
+      token: authToken,
+      type: 'Bearer',
+      id: 5,
+      username: 'user',
+      firstName: 'Regular',
+      lastName: 'User',
+      admin: false
+    };
+  
+    // Set up initial session storage
+    cy.window().then((window) => {
+      window.sessionStorage.setItem('token', authToken);
+      window.localStorage.setItem('session', JSON.stringify(mockUser));
+    });
+  
+    // Intercepter le login
+    cy.intercept('POST', '/api/auth/login', {
+      statusCode: 200,
+      body: mockUser
+    }).as('login');
+  
+    // Intercepter les sessions
+    cy.intercept('GET', '/api/session', {
+      statusCode: 200,
+      body: [{
+        id: 1,
+        name: 'yoga',
+        description: 'test',
+        date: new Date(),
+        teacher_id: 1,
+        users: []
+      }]
+    }).as('getSessions');
+  
+    // Se connecter
+    cy.visit('/login');
+    cy.get('input[formControlName=email]').type("yoga@studio.com");
+    cy.get('input[formControlName=password]').type(`${"test!1234"}{enter}{enter}`);
+    cy.wait('@login');
+    cy.wait('@getSessions');
+  
+    // Intercepter l'erreur de détail session après la navigation
+    cy.intercept('GET', '/api/session/1', {
+      statusCode: 500,
+      body: { message: 'Internal server error' }
+    }).as('sessionError');
+  
+    // Cliquer sur le bouton Detail
+    cy.contains('button', 'Detail').click();
+    cy.wait('@sessionError');
+    cy.get('mat-card').should('not.exist');
+  });
+
+  it('should handle session deletion for admin user', () => {
+    const authToken = 'fake-jwt-token';
+    const mockUser = {
+      token: authToken,
+      type: 'Bearer',
+      id: 5,
+      username: 'user',
+      firstName: 'Admin',
+      lastName: 'User',
+      admin: true
+    };
+  
+    // Set up initial session storage
+    cy.window().then((window) => {
+      window.sessionStorage.setItem('token', authToken);
+      window.localStorage.setItem('session', JSON.stringify(mockUser));
+    });
+  
+    // Intercepter le login
+    cy.intercept('POST', '/api/auth/login', {
+      statusCode: 200,
+      body: mockUser
+    }).as('login');
+  
+    // Intercepter les sessions
+    cy.intercept('GET', '/api/session', {
+      statusCode: 200,
+      body: [{
+        id: 1,
+        name: 'yoga',
+        description: 'test',
+        date: new Date(),
+        teacher_id: 1,
+        users: []
+      }]
+    }).as('getSessions');
+  
+    // Se connecter
+    cy.visit('/login');
+    cy.get('input[formControlName=email]').type("yoga@studio.com");
+    cy.get('input[formControlName=password]').type(`${"test!1234"}{enter}{enter}`);
+    cy.wait('@login');
+    cy.wait('@getSessions');
+  
+    // Intercepter la requête de détail
+    cy.intercept('GET', '/api/session/1', {
+      statusCode: 200,
+      body: {
+        id: 1,
+        name: 'yoga',
+        description: 'test',
+        date: new Date(),
+        teacher_id: 1,
+        users: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    }).as('getSession');
+  
+    // Intercepter la suppression
+    cy.intercept('DELETE', '/api/session/1', {
+      statusCode: 200
+    }).as('deleteSession');
+  
+    // Cliquer sur Detail puis Delete
+    cy.contains('button', 'Detail').click();
+    cy.wait('@getSession');
+    cy.contains('button', 'Delete').click();
+    cy.wait('@deleteSession');
+  
+    // Vérifier la redirection et le message
+    cy.url().should('include', '/sessions');
+    cy.contains('Session deleted !').should('be.visible');
+  });
 });

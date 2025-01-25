@@ -9,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterTestingModule } from '@angular/router/testing';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { FormComponent } from './form.component';
 import { SessionService } from 'src/app/services/session.service';
@@ -17,6 +17,7 @@ import { SessionApiService } from '../../services/session-api.service';
 import { TeacherService } from '../../../../services/teacher.service';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { expect } from '@jest/globals';
+import { Session } from '../../interfaces/session.interface';
 
 // Mock des méthodes d'animation et d'écouteurs d'événements pour les tests
 Object.defineProperty(window.Element.prototype, 'animate', { value: jest.fn() });
@@ -43,6 +44,15 @@ describe('FormComponent - Unit Tests', () => {
     detail: jest.fn().mockReturnValue(of({})) // Simule l'obtention des détails d'une session
   };
 
+  const mockActivatedRoute = {
+    snapshot: {
+      paramMap: {
+        get: jest.fn().mockReturnValue('1')
+      }
+    }
+  };
+  
+
   beforeEach(() => {
     // Initialisation du mock pour MatSnackBar
     mockMatSnackBar = {
@@ -60,7 +70,8 @@ describe('FormComponent - Unit Tests', () => {
         { provide: SessionService, useValue: mockSessionService },
         { provide: SessionApiService, useValue: mockSessionApiService },
         { provide: TeacherService, useValue: mockTeacherService },
-        { provide: MatSnackBar, useValue: mockMatSnackBar }
+        { provide: MatSnackBar, useValue: mockMatSnackBar },
+        { provide: ActivatedRoute, useValue: mockActivatedRoute }
       ],
       declarations: [FormComponent] // Déclaration du composant à tester
     });
@@ -91,6 +102,9 @@ describe('FormComponent - Unit Tests', () => {
       component.ngOnInit();
       expect(navigateSpy).toHaveBeenCalledWith(['/sessions']);
     });
+
+    
+    
   });
 
   // Tests concernant l'envoi du formulaire
