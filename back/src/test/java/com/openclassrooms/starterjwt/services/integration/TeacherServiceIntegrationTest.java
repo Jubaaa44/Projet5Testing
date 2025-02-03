@@ -1,4 +1,4 @@
-/*package com.openclassrooms.starterjwt.services;
+/*package com.openclassrooms.starterjwt.services.integration;
 
 import static org.junit.jupiter.api.Assertions.*;
 

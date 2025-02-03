@@ -1,4 +1,4 @@
-package com.openclassrooms.starterjwt.services;
+package com.openclassrooms.starterjwt.services.integration;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,6 +18,7 @@ import com.openclassrooms.starterjwt.models.User;
 import com.openclassrooms.starterjwt.repository.SessionRepository;
 import com.openclassrooms.starterjwt.repository.TeacherRepository;
 import com.openclassrooms.starterjwt.repository.UserRepository;
+import com.openclassrooms.starterjwt.services.SessionService;
 import com.openclassrooms.starterjwt.exception.BadRequestException;
 import com.openclassrooms.starterjwt.exception.NotFoundException;
 

@@ -1,0 +1,3 @@
+com.openclassrooms.starterjwt.models.*
+com.openclassrooms.starterjwt.dto.*
+com.openclassrooms.starterjwt.payload.*
